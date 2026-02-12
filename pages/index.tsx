@@ -1,6 +1,9 @@
+/**
+ * Этап 5 PLAN.md: интерфейс (форма и кнопки).
+ * Этап 6 PLAN.md: блок отображения результата.
+ */
 import { useRef, useState } from "react";
-
-type Mode = "about" | "thesis" | "telegram";
+import type { Mode } from "../lib/prompts";
 
 export default function HomePage() {
   const [url, setUrl] = useState("");
@@ -68,6 +71,7 @@ export default function HomePage() {
         </header>
 
         <section className="glass-panel rounded-2xl p-6 md:p-8 space-y-6">
+          {/* 5.1. Поле ввода URL статьи */}
           <div className="space-y-2">
             <label
               htmlFor="article-url"
@@ -90,6 +94,9 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* 5.2. Три кнопки: onClick → handleSubmit(selectedMode), mode: about | thesis | telegram */}
+          {/* 5.3. Визуальная подсветка активной кнопки (по mode) */}
+          {/* 5.4. Состояния: loading, error, result */}
           <div className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Действие
@@ -136,12 +143,16 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* 6. Блок отображения результата */}
+          {/* 6.1. При ошибке: показывать error в отдельном блоке */}
           {error && (
             <div className="rounded-xl border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
               {error}
             </div>
           )}
 
+          {/* 6.1. Поле «Результат»: result из API; при загрузке — индикатор «Генерация ответа...» */}
+          {/* 6.2. Placeholder, когда ещё нет результата */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-200">
