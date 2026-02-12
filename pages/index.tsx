@@ -1,0 +1,164 @@
+import { useRef, useState } from "react";
+
+type Mode = "about" | "thesis" | "telegram";
+
+export default function HomePage() {
+  const [url, setUrl] = useState("");
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (selectedMode: Mode) => {
+    const currentUrl = (urlInputRef.current?.value ?? url).trim();
+    setMode(selectedMode);
+    setError(null);
+    setLoading(true);
+
+    if (!currentUrl) {
+      setError("Пожалуйста, введите URL статьи.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setResult("");
+
+      const response = await fetch("/api/article", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ url: currentUrl, mode: selectedMode })
+      });
+
+      const data: { result?: string; error?: string } = await response.json();
+
+      if (!response.ok) {
+        setError(data.error ?? "Не удалось получить ответ от сервера.");
+        return;
+      }
+
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setResult(data.result ?? "");
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Произошла ошибка при обращении к AI. Попробуйте ещё раз."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-3xl space-y-8">
+        <header className="text-center space-y-2">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            AI-помощник для англоязычных статей
+          </h1>
+          <p className="text-slate-300 text-sm md:text-base">
+            Вставьте ссылку на англоязычную статью и получите краткое
+            объяснение, тезисы или текст для Telegram.
+          </p>
+        </header>
+
+        <section className="glass-panel rounded-2xl p-6 md:p-8 space-y-6">
+          <div className="space-y-2">
+            <label
+              htmlFor="article-url"
+              className="block text-sm font-medium text-slate-200"
+            >
+              URL статьи
+            </label>
+            <input
+              ref={urlInputRef}
+              id="article-url"
+              type="url"
+              placeholder="https://example.com/english-article"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 outline-none ring-0 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition"
+            />
+            <p className="text-xs text-slate-400">
+              Приложение загрузит и проанализирует текст статьи по указанному
+              адресу.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Действие
+            </p>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleSubmit("about")}
+                className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                  mode === "about"
+                    ? "bg-sky-500 text-white shadow-lg shadow-sky-500/40"
+                    : "bg-slate-800/80 text-slate-100 hover:bg-slate-700"
+                } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                О чем статья?
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleSubmit("thesis")}
+                className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                  mode === "thesis"
+                    ? "bg-sky-500 text-white shadow-lg shadow-sky-500/40"
+                    : "bg-slate-800/80 text-slate-100 hover:bg-slate-700"
+                } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                Тезисы
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleSubmit("telegram")}
+                className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                  mode === "telegram"
+                    ? "bg-sky-500 text-white shadow-lg shadow-sky-500/40"
+                    : "bg-slate-800/80 text-slate-100 hover:bg-slate-700"
+                } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                Пост для Telegram
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="rounded-xl border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-200">
+                Результат
+              </span>
+              {loading && (
+                <span className="text-xs text-sky-300 animate-pulse">
+                  Генерация ответа...
+                </span>
+              )}
+            </div>
+            <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap">
+              {result || (!loading && "Здесь появится результат работы AI.")}
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
