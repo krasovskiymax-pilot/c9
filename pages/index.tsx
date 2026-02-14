@@ -3,6 +3,7 @@
  * Этап 6 PLAN.md: блок отображения результата.
  */
 import { useEffect, useRef, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import type { Mode } from "../lib/prompts";
 import { ERROR_MESSAGES } from "../lib/errors";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
