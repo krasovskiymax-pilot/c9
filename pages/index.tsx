@@ -18,15 +18,29 @@ export default function HomePage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     if (!loading) {
       setStatusMessage(null);
+      setElapsedSeconds(0);
       return;
     }
+    setElapsedSeconds(0);
     setStatusMessage("Загружаю статью…");
-    const timer = setTimeout(() => setStatusMessage("Генерирую ответ…"), 2000);
-    return () => clearTimeout(timer);
+    const messageTimer = setTimeout(
+      () => setStatusMessage("Генерирую ответ…"),
+      2000
+    );
+    return () => clearTimeout(messageTimer);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
   }, [loading]);
 
   const handleSubmit = async (selectedMode: Mode) => {
@@ -80,6 +94,7 @@ export default function HomePage() {
     setMode(null);
     setStatusMessage(null);
     setCopied(false);
+    setElapsedSeconds(0);
     urlInputRef.current?.focus();
   };
 
@@ -95,19 +110,19 @@ export default function HomePage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl space-y-8">
-        <header className="text-center space-y-2">
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+    <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:py-10 sm:px-6">
+      <div className="w-full max-w-3xl min-w-0 space-y-6 sm:space-y-8">
+        <header className="text-center space-y-2 px-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight break-words">
             AI-помощник для англоязычных статей
           </h1>
-          <p className="text-slate-300 text-sm md:text-base">
+          <p className="text-slate-300 text-sm md:text-base break-words">
             Вставьте ссылку на англоязычную статью и получите краткое
             объяснение, тезисы или текст для Telegram.
           </p>
         </header>
 
-        <section className="glass-panel rounded-2xl p-6 md:p-8 space-y-6">
+        <section className="glass-panel rounded-2xl p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 overflow-hidden">
           {/* 5.1. Поле ввода URL статьи */}
           <div className="space-y-2">
             <label
@@ -120,10 +135,10 @@ export default function HomePage() {
               ref={urlInputRef}
               id="article-url"
               type="url"
-              placeholder="Введите URL статьи, например: https://example.com/article"
+              placeholder="https://example.com/article"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 outline-none ring-0 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 outline-none ring-0 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition"
             />
             <p className="text-xs text-slate-400">
               Укажите ссылку на англоязычную статью
@@ -204,16 +219,20 @@ export default function HomePage() {
 
           {/* Блок текущего процесса — показывается только при загрузке */}
           {statusMessage && (
-            <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-2.5 text-sm text-slate-300">
-              {statusMessage}
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-2.5 text-sm text-slate-300 break-words flex items-center justify-between gap-3 flex-wrap">
+              <span>{statusMessage}</span>
+              <span className="tabular-nums text-slate-400 shrink-0">
+                {Math.floor(elapsedSeconds / 60)}:
+                {(elapsedSeconds % 60).toString().padStart(2, "0")}
+              </span>
             </div>
           )}
 
           {/* 6.1. Поле «Результат»: result из API */}
           {/* 6.2. Placeholder, когда ещё нет результата */}
-          <div ref={resultBlockRef} className="space-y-2 scroll-mt-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-slate-200">
+          <div ref={resultBlockRef} className="space-y-2 scroll-mt-4 min-w-0">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <span className="text-sm font-medium text-slate-200 min-w-0">
                 Результат
               </span>
               {result && (
@@ -227,7 +246,7 @@ export default function HomePage() {
                 </button>
               )}
             </div>
-            <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap">
+            <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap break-words overflow-x-auto overflow-y-auto">
               {result || (!loading && "Здесь появится результат работы AI.")}
             </div>
           </div>
