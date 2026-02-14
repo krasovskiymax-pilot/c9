@@ -3,7 +3,7 @@
  * Этап 6 PLAN.md: блок отображения результата.
  */
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import type { Mode } from "../lib/prompts";
 import { ERROR_MESSAGES } from "../lib/errors";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
@@ -161,7 +161,7 @@ export default function HomePage() {
           {/* 6.1. При ошибке: показывать error в карточке Alert (shadcn) */}
           {error && (
             <Alert variant="destructive">
-              <AlertCircle />
+              <CircleAlert />
               <AlertTitle>Ошибка</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
