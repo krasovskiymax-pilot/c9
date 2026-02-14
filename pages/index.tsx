@@ -2,8 +2,10 @@
  * Этап 5 PLAN.md: интерфейс (форма и кнопки).
  * Этап 6 PLAN.md: блок отображения результата.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Mode } from "../lib/prompts";
+import { ERROR_MESSAGES } from "../lib/errors";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 
 export default function HomePage() {
   const [url, setUrl] = useState("");
@@ -11,7 +13,18 @@ export default function HomePage() {
   const [mode, setMode] = useState<Mode | null>(null);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      setStatusMessage(null);
+      return;
+    }
+    setStatusMessage("Загружаю статью…");
+    const timer = setTimeout(() => setStatusMessage("Генерирую ответ…"), 2000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   const handleSubmit = async (selectedMode: Mode) => {
     const currentUrl = (urlInputRef.current?.value ?? url).trim();
@@ -20,7 +33,7 @@ export default function HomePage() {
     setLoading(true);
 
     if (!currentUrl) {
-      setError("Пожалуйста, введите URL статьи.");
+      setError(ERROR_MESSAGES.INVALID_URL);
       setLoading(false);
       return;
     }
@@ -39,7 +52,7 @@ export default function HomePage() {
       const data: { result?: string; error?: string } = await response.json();
 
       if (!response.ok) {
-        setError(data.error ?? "Не удалось получить ответ от сервера.");
+        setError(data.error ?? ERROR_MESSAGES.UNKNOWN);
         return;
       }
 
@@ -48,10 +61,8 @@ export default function HomePage() {
       } else {
         setResult(data.result ?? "");
       }
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Произошла ошибка при обращении к AI. Попробуйте ещё раз."
-      );
+    } catch {
+      setError(ERROR_MESSAGES.UNKNOWN);
     } finally {
       setLoading(false);
     }
@@ -83,14 +94,13 @@ export default function HomePage() {
               ref={urlInputRef}
               id="article-url"
               type="url"
-              placeholder="https://example.com/english-article"
+              placeholder="Введите URL статьи, например: https://example.com/article"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 outline-none ring-0 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition"
             />
             <p className="text-xs text-slate-400">
-              Приложение загрузит и проанализирует текст статьи по указанному
-              адресу.
+              Укажите ссылку на англоязычную статью
             </p>
           </div>
 
@@ -105,6 +115,7 @@ export default function HomePage() {
               <button
                 type="button"
                 disabled={loading}
+                title="Получить краткое объяснение о чём статья"
                 onClick={() => handleSubmit("about")}
                 className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
                   mode === "about"
@@ -118,6 +129,7 @@ export default function HomePage() {
               <button
                 type="button"
                 disabled={loading}
+                title="Выделить основные тезисы статьи"
                 onClick={() => handleSubmit("thesis")}
                 className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
                   mode === "thesis"
@@ -131,6 +143,7 @@ export default function HomePage() {
               <button
                 type="button"
                 disabled={loading}
+                title="Создать пост для Telegram со ссылкой на источник"
                 onClick={() => handleSubmit("telegram")}
                 className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
                   mode === "telegram"
@@ -144,25 +157,29 @@ export default function HomePage() {
           </div>
 
           {/* 6. Блок отображения результата */}
-          {/* 6.1. При ошибке: показывать error в отдельном блоке */}
+          {/* 6.1. При ошибке: показывать error в карточке Alert (shadcn) */}
           {error && (
-            <div className="rounded-xl border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
-              {error}
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>Ошибка</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Блок текущего процесса — показывается только при загрузке */}
+          {statusMessage && (
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-2.5 text-sm text-slate-300">
+              {statusMessage}
             </div>
           )}
 
-          {/* 6.1. Поле «Результат»: result из API; при загрузке — индикатор «Генерация ответа...» */}
+          {/* 6.1. Поле «Результат»: result из API */}
           {/* 6.2. Placeholder, когда ещё нет результата */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-200">
                 Результат
               </span>
-              {loading && (
-                <span className="text-xs text-sky-300 animate-pulse">
-                  Генерация ответа...
-                </span>
-              )}
             </div>
             <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap">
               {result || (!loading && "Здесь появится результат работы AI.")}
