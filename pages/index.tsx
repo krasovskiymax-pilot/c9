@@ -11,11 +11,13 @@ import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 export default function HomePage() {
   const [url, setUrl] = useState("");
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const resultBlockRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -60,12 +62,35 @@ export default function HomePage() {
       if (data.error) {
         setError(data.error);
       } else {
-        setResult(data.result ?? "");
+        const newResult = data.result ?? "";
+        setResult(newResult);
+        resultBlockRef.current?.scrollIntoView({ behavior: "smooth" });
       }
     } catch {
       setError(ERROR_MESSAGES.UNKNOWN);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setUrl("");
+    setResult("");
+    setError(null);
+    setMode(null);
+    setStatusMessage(null);
+    setCopied(false);
+    urlInputRef.current?.focus();
+  };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   };
 
@@ -155,6 +180,16 @@ export default function HomePage() {
                 Пост для Telegram
               </button>
             </div>
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={handleClear}
+                title="Сбросить URL, результат, ошибки и состояния"
+                className="rounded-lg px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-700/60 hover:text-slate-200 transition"
+              >
+                Очистить
+              </button>
+            </div>
           </div>
 
           {/* 6. Блок отображения результата */}
@@ -176,11 +211,21 @@ export default function HomePage() {
 
           {/* 6.1. Поле «Результат»: result из API */}
           {/* 6.2. Placeholder, когда ещё нет результата */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div ref={resultBlockRef} className="space-y-2 scroll-mt-4">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium text-slate-200">
                 Результат
               </span>
+              {result && (
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  title="Скопировать в буфер обмена"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 hover:bg-slate-700/60 hover:text-slate-200 transition shrink-0"
+                >
+                  {copied ? "Скопировано" : "Копировать"}
+                </button>
+              )}
             </div>
             <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap">
               {result || (!loading && "Здесь появится результат работы AI.")}
