@@ -41,7 +41,14 @@ export default async function handler(
     const result = await callOpenRouter(currentMode, articleText, url);
     return res.status(200).json({ result });
   } catch (error) {
-    console.error("[callOpenRouter]", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const hasKey = Boolean(process.env.OPENROUTER_API_KEY?.trim());
+    console.error(
+      "[callOpenRouter]",
+      errMsg,
+      "| OPENROUTER_API_KEY:",
+      hasKey ? "present" : "MISSING"
+    );
     return res.status(500).json({ error: ERROR_MESSAGES.AI_PROCESSING_FAILED });
   }
 }
