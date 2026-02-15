@@ -18,13 +18,16 @@ export async function generateImage(prompt: string): Promise<Buffer> {
 
   const client = new InferenceClient(HF_API_KEY);
 
-  const blob = await client.textToImage({
-    model: HF_MODEL,
-    inputs: prompt,
-    provider: "auto",
-    parameters: { num_inference_steps: 5 }
-  });
+  const result = (await client.textToImage(
+    {
+      model: HF_MODEL,
+      inputs: prompt,
+      provider: "auto",
+      parameters: { num_inference_steps: 5 }
+    },
+    { outputType: "blob" as const }
+  )) as Blob;
 
-  const arrayBuffer = await blob.arrayBuffer();
+  const arrayBuffer = await result.arrayBuffer();
   return Buffer.from(arrayBuffer);
 }
