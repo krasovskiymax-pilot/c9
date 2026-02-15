@@ -82,3 +82,10 @@ export async function callOpenRouter(
 
   return content.trim();
 }
+
+/**
+ * Генерирует промпт для иллюстрации на основе статьи (режим illustration).
+ */
+export async function generateImagePrompt(articleText: string): Promise<string> {
+  return callOpenRouter("illustration", articleText);
+}

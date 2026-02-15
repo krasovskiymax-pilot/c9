@@ -14,6 +14,7 @@ export default function HomePage() {
   const resultBlockRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode | null>(null);
   const [result, setResult] = useState("");
+  const [resultImage, setResultImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +29,15 @@ export default function HomePage() {
     }
     setElapsedSeconds(0);
     setStatusMessage("Загружаю статью…");
-    const messageTimer = setTimeout(
-      () => setStatusMessage("Генерирую ответ…"),
+    const t2 = setTimeout(
+      () =>
+        setStatusMessage(
+          mode === "illustration" ? "Генерирую иллюстрацию…" : "Генерирую ответ…"
+        ),
       2000
     );
-    return () => clearTimeout(messageTimer);
-  }, [loading]);
+    return () => clearTimeout(t2);
+  }, [loading, mode]);
 
   useEffect(() => {
     if (!loading) return;
@@ -57,12 +61,35 @@ export default function HomePage() {
 
     try {
       setResult("");
+      setResultImage(null);
+
+      if (selectedMode === "illustration") {
+        const response = await fetch("/api/illustration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: currentUrl })
+        });
+
+        const data: { imageBase64?: string; error?: string } =
+          await response.json();
+
+        if (!response.ok) {
+          setError(data.error ?? ERROR_MESSAGES.UNKNOWN);
+          return;
+        }
+
+        if (data.error) {
+          setError(data.error);
+        } else if (data.imageBase64) {
+          setResultImage(`data:image/png;base64,${data.imageBase64}`);
+          resultBlockRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+        return;
+      }
 
       const response = await fetch("/api/article", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: currentUrl, mode: selectedMode })
       });
 
@@ -90,6 +117,7 @@ export default function HomePage() {
   const handleClear = () => {
     setUrl("");
     setResult("");
+    setResultImage(null);
     setError(null);
     setMode(null);
     setStatusMessage(null);
@@ -152,7 +180,7 @@ export default function HomePage() {
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Действие
             </p>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
               <button
                 type="button"
                 disabled={loading}
@@ -193,6 +221,20 @@ export default function HomePage() {
                 } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 Пост для Telegram
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
+                title="Сгенерировать иллюстрацию по статье"
+                onClick={() => handleSubmit("illustration")}
+                className={`flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition ${
+                  mode === "illustration"
+                    ? "bg-sky-500 text-white shadow-lg shadow-sky-500/40"
+                    : "bg-slate-800/80 text-slate-100 hover:bg-slate-700"
+                } ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                Иллюстрация
               </button>
             </div>
             <div className="flex justify-end pt-1">
@@ -246,8 +288,20 @@ export default function HomePage() {
                 </button>
               )}
             </div>
-            <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 whitespace-pre-wrap break-words overflow-x-auto overflow-y-auto">
-              {result || (!loading && "Здесь появится результат работы AI.")}
+            <div className="min-h-[180px] rounded-xl border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-100 overflow-hidden">
+              {resultImage ? (
+                <img
+                  src={resultImage}
+                  alt="Сгенерированная иллюстрация"
+                  className="max-w-full h-auto rounded-lg"
+                />
+              ) : result ? (
+                <div className="whitespace-pre-wrap break-words overflow-x-auto overflow-y-auto">
+                  {result}
+                </div>
+              ) : !loading ? (
+                "Здесь появится результат работы AI."
+              ) : null}
             </div>
           </div>
         </section>
